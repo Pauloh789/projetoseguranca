@@ -13,6 +13,19 @@ Vagrant.configure("2") do |config|
       vb.cpus = 1
     end
 
+    config.vm.define "nginx_server" do |nginx|
+      nginx.vm.provision "shell", inline: <<-SHELL
+      # Copie o arquivo de configuração personalizado
+      sudo cp /vagrant/sshd_config_custom /etc/ssh/sshd_config_custom
+
+      # Atualize o arquivo de configuração do SSH para usar o arquivo personalizado
+      sudo sed -i 's/Include \/etc\/ssh\/sshd_config/Include \/etc\/ssh\/sshd_config_custom/' /etc/ssh/sshd_config
+
+      # Reinicie o serviço SSH para aplicar as alterações
+      sudo systemctl restart ssh
+      SHELL
+    end 
+
     # Provisionamento para o servidor Nginx
     nginx.vm.provision "shell", path: "nginx_provision.sh"
 
@@ -27,22 +40,9 @@ Vagrant.configure("2") do |config|
     nginx.vm.provision "shell", inline: <<-SHELL
       sudo apt-get update
       sudo apt-get upgrade -y
-    SHELL 
-
-    config.vm.define "nginx_server" do |nginx|
-      # ...
-      nginx.vm.provision "shell", inline: <<-SHELL
-        # Copie o arquivo de configuração personalizado
-        sudo cp /vagrant/sshd_config_custom /etc/ssh/sshd_config_custom
-    
-        # Atualize o arquivo de configuração do SSH para usar o arquivo personalizado
-        sudo sed -i 's/Include \/etc\/ssh\/sshd_config/Include \/etc\/ssh\/sshd_config_custom/' /etc/ssh/sshd_config
-    
-        # Reinicie o serviço SSH para aplicar as alterações
-        sudo systemctl restart ssh
-      SHELL
-    end
+    SHELL  
   end
+
 
   # Configuração para a segunda máquina (Apache)
   config.vm.define "apache_server" do |apache|
@@ -62,7 +62,7 @@ Vagrant.configure("2") do |config|
       sudo apt-get install -y ufw
       sudo ufw allow 'Apache'
       sudo ufw enable
-    SHELL
+    SHELL 
 
     # Configuração de atualizações automáticas
     apache.vm.provision "shell", inline: <<-SHELL
